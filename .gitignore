@@ -1,0 +1,5 @@
+secrets*
+.sops.yaml
+*.pdf
+packingslipper
+logo.png
