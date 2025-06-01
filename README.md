@@ -27,7 +27,7 @@ store and give it permission to view orders. Note the API token that you are giv
 
 The secrets configuration for this project is a bit overkill, but the whole thing is really a learning exercise anyway.
 SOPS is a pretty simple tool for encrypting files. Age is a modern PGP alternative for doing the actual encryption. And
-the Go `go.mozilla.org/sops/v3/decrypt` package provides an easy way to use those encrypted files inside a Go program.
+the ~~go.mozilla.org/sops/v3/decrypt~~ **github.com/getsops/sops/v3** package (never use that mozilla one!) provides an easy way to use those encrypted files inside a Go program.
 
 The secrets for this program are the token from above and your Shopify shop name (as shown at the beginning of your Shopify admin site URL).
 These secrets are stored in an encrypted YAML file. Create the YAML file and encrypt it using SOPS. You'll probably
