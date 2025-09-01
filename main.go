@@ -31,8 +31,9 @@ type Config struct {
 	} `yaml:"logo"`
 
 	Text struct {
-		Salutation string `yaml:"salutation"`
-		Signature  string `yaml:"signature"`
+		Salutation    string `yaml:"salutation"`
+		Signature     string `yaml:"signature"`
+		VerticalSpace int    `yaml:"vertical-space"`
 	} `yaml:"text"`
 }
 
@@ -184,9 +185,12 @@ func main() {
 		log.Info("Got orders", "latest", latest.Name)
 	}
 
-	p.Image(cfg.Config.Logo.Filename, p.MarginLeft(), p.MarginTop(), nil)
-
 	p.SetXY(p.MarginLeft(), float64(cfg.Config.Logo.VerticalSpace))
+	x := p.GetX()
+	y := p.GetY()
+	p.Image(cfg.Config.Logo.Filename, x, y, nil)
+
+	p.SetXY(p.MarginLeft(), float64(cfg.Config.Text.VerticalSpace))
 	p.writeLine("Order " + latest.Name)
 	p.writeLine(latest.CreatedAt.Format("Jan 1, 2006") + "\n\n")
 

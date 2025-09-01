@@ -75,8 +75,9 @@ The program accepts these flags:
 | ---- | ------- | ----------- |
 | outfile | packingslip.pdf | Output PDF filename |
 | offset | 0 | How far back to jump from the most recent order |
-| config | configuration.yaml | Configuration YAML filename |
-| secrets | secrets.enc.yaml | Encrypted secrets YAML filename |
+| config | configuration.yaml | Configuration YAML filename (default: ~/.config/packingslipper/configuration.yaml) |
+| secrets | secrets.enc.yaml | Encrypted secrets YAML filename (default: ~/.config/packingslipper/secrets.enc.yaml) |
+| verbose | false | Display extra information on STDOUT |
 
 ## Issues
 

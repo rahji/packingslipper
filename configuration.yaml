@@ -1,7 +1,8 @@
 logo:
   filename: "logo.png"
-  vertical-space: 86
+  vertical-space: 10
 
 text:
   salutation: "Thank you!!!"
   signature: "Store Owner" 
+  vertical-space: 86
