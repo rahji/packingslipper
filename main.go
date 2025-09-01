@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/alecthomas/kong"
 	goshopify "github.com/bold-commerce/go-shopify/v4"
+	"github.com/charmbracelet/log"
 	"github.com/getsops/sops/v3/decrypt"
 	"github.com/signintech/gopdf"
 	"gopkg.in/yaml.v2"
@@ -18,8 +19,9 @@ import (
 type CLIFlags struct {
 	OutFilename     string `kong:"default='packingslip.pdf',name='outfile',help='Output PDF filename'"`
 	OrderOffset     int    `kong:"default=0,name='offset',help='Offset from most recent order to retrieve'"`
-	ConfigFilename  string `kong:"default='configuration.yaml',name='config',help='Configuration YAML file'"`
-	SecretsFilename string `kong:"default='secrets.enc.yaml',name='secrets',help='Encrypted secrets YAML file'"`
+	ConfigFilename  string `kong:"name='config',help='Configuration YAML file (default: ~/.config/packingslipper/configuration.yaml)'"`
+	SecretsFilename string `kong:"name='secrets',help='Encrypted secrets YAML file (default: ~/.config/packingslipper/secrets.enc.yaml)'"`
+	Verbose         bool   `kong:"name='verbose',help='Display extra information on STDOUT'"`
 }
 
 type Config struct {
@@ -101,6 +103,7 @@ func (p *myPdf) writeLine(s string) {
 	}
 }
 
+// LoadConfig loads the config and secrets yaml files and returns structs
 func LoadConfig(configPath, secretsPath string) (*AllConfig, error) {
 	// Load plain configuration
 	configData, err := os.ReadFile(configPath)
@@ -131,26 +134,40 @@ func LoadConfig(configPath, secretsPath string) (*AllConfig, error) {
 }
 
 func main() {
-
 	var cli CLIFlags
 	kong.Parse(&cli)
 
-	// load the configuration
+	// usee the default config and secrets file location in ~/.config/packingslipper
+	// if those flags aren't specified
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if cli.ConfigFilename == "" {
+		cli.ConfigFilename = filepath.Join(home, ".config", "packingslipper", "configuration.yaml")
+	}
+	if cli.SecretsFilename == "" {
+		cli.SecretsFilename = filepath.Join(home, ".config", "packingslipper", "secrets.enc.yaml")
+	}
+	if cli.Verbose {
+		log.Info("Using config", "configuration", cli.ConfigFilename)
+		log.Info("Using config", "secrets", cli.SecretsFilename)
+	}
+
+	// load the configuration files
 	cfg, err := LoadConfig(cli.ConfigFilename, cli.SecretsFilename)
 	if err != nil {
-		log.Fatal("Error loading configuration: ", err)
+		log.Fatal(err)
 	}
 
 	// create the blank label
 	p, err := createPDF()
 	if err != nil {
-		log.Fatal("Error creating PDF: ", err)
+		log.Fatal(err)
 	}
 
-	// Create an app somewhere.
+	// create a new shopify app and api client
 	app := goshopify.App{}
-
-	// Create a new API client (notice the token parameter is the empty string)
 	client, err := goshopify.NewClient(app, cfg.Secrets.API.ShopName, cfg.Secrets.API.Token)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -163,6 +180,9 @@ func main() {
 
 	// get latest entry
 	latest := orders[cli.OrderOffset]
+	if cli.Verbose {
+		log.Info("Got orders", "latest", latest.Name)
+	}
 
 	p.Image(cfg.Config.Logo.Filename, p.MarginLeft(), p.MarginTop(), nil)
 
