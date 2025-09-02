@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +17,10 @@ import (
 	"github.com/signintech/gopdf"
 	"gopkg.in/yaml.v2"
 )
+
+//go:embed arialrounded.ttf
+//go:embed arialroundedbold.ttf
+var EmbeddedFile embed.FS
 
 type CLIFlags struct {
 	OutFilename     string `kong:"default='packingslip.pdf',name='outfile',help='Output PDF filename'"`
@@ -60,18 +66,52 @@ const pageHeight = 504 // points
 const lineSpacing = 13
 const fontSize = 10
 
+// loadEmbeddedFont returns an fs.File from an embedded ttf file
+func loadEmbeddedFont(fn string) (fs.File, error) {
+	f, err := EmbeddedFile.Open(fn)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return f, nil
+}
+
 // createPDF sets up a gopdf.GoPdf document for the packing slip label
 func createPDF() (*myPdf, error) {
+	// create the pdf struct
 	pdf := &myPdf{&gopdf.GoPdf{}}
+
+	// load the font files
+	boldFile, err := loadEmbeddedFont("arialroundedbold.ttf")
+	if err != nil {
+		return nil, err
+	}
+	regFile, err := loadEmbeddedFont("arialrounded.ttf")
+	if err != nil {
+		return nil, err
+	}
+
+	// create font containers for the two fonts
+	regFontContainer := &gopdf.FontContainer{}
+	err = regFontContainer.AddTTFFontByReader("regular", regFile)
+	if err != nil {
+		return nil, err
+	}
+	boldFontContainer := &gopdf.FontContainer{}
+	err = boldFontContainer.AddTTFFontByReader("bold", boldFile)
+	if err != nil {
+		return nil, err
+	}
+
 	labelSize := &gopdf.Rect{W: pageWidth, H: pageHeight}
 	pdf.Start(gopdf.Config{PageSize: *labelSize})
 	pdf.AddPage()
 
-	if err := pdf.AddTTFFont("regular", "fonts/arialrounded.ttf"); err != nil {
+	// load the fonts from their containers
+	if err := pdf.AddTTFFontFromFontContainer("regular", regFontContainer); err != nil {
 		return nil, err
 	}
-
-	if err := pdf.AddTTFFont("bold", "fonts/arialroundedbold.ttf"); err != nil {
+	if err := pdf.AddTTFFontFromFontContainer("bold", boldFontContainer); err != nil {
 		return nil, err
 	}
 
