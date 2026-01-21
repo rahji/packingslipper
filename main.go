@@ -30,6 +30,18 @@ type CLIFlags struct {
 	Verbose         bool   `kong:"name='verbose',help='Display extra information on STDOUT'"`
 }
 
+type FontStyle int
+
+const (
+	Bold FontStyle = iota
+	Regular
+)
+
+var fontStyleName = map[FontStyle]string{
+	Bold:    "bold",
+	Regular: "regular",
+}
+
 type Config struct {
 	Logo struct {
 		Filename      string `yaml:"filename"`
@@ -144,6 +156,15 @@ func (p *myPdf) writeLine(s string) {
 	}
 }
 
+// changeFontStyle sets the font to either bold or regular
+// it does a log.Fatal if it can't be done
+func (p *myPdf) changeFontStyle(s FontStyle) {
+	err := p.SetFont(fontStyleName[s], "", fontSize)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 // LoadConfig loads the config and secrets yaml files and returns structs
 func LoadConfig(configPath, secretsPath string) (*AllConfig, error) {
 	// Load plain configuration
@@ -210,6 +231,9 @@ func main() {
 	// create a new shopify app and api client
 	app := goshopify.App{}
 	client, err := goshopify.NewClient(app, cfg.Secrets.API.ShopName, cfg.Secrets.API.Token)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -228,16 +252,19 @@ func main() {
 	p.SetXY(p.MarginLeft(), float64(cfg.Config.Logo.VerticalSpace))
 	x := p.GetX()
 	y := p.GetY()
-	p.Image(cfg.Config.Logo.Filename, x, y, nil)
+	err = p.Image(cfg.Config.Logo.Filename, x, y, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	p.SetXY(p.MarginLeft(), float64(cfg.Config.Text.VerticalSpace))
 	p.writeLine("Order " + latest.Name)
-	p.writeLine(latest.CreatedAt.Format("Jan 1, 2006") + "\n\n")
+	p.writeLine(latest.CreatedAt.Format("Jan 2, 2006") + "\n\n")
 
-	p.SetFont("bold", "", fontSize)
+	p.changeFontStyle(Bold)
 	p.writeLine("SHIP TO\n")
 
-	p.SetFont("regular", "", fontSize)
+	p.changeFontStyle(Regular)
 	p.writeLine(latest.ShippingAddress.FirstName + " " + latest.ShippingAddress.LastName)
 	p.writeLine(latest.ShippingAddress.Address1)
 	if latest.ShippingAddress.Address2 != "" {
@@ -255,17 +282,20 @@ func main() {
 	p.writeLine(latest.ShippingAddress.Country + "\n\n")
 
 	for _, lineItem := range latest.LineItems {
-		p.SetFont("regular", "", fontSize)
+		p.changeFontStyle(Regular)
 		p.writeLine(fmt.Sprintf("Qty %d", lineItem.Quantity))
-		p.SetFont("bold", "", fontSize)
+		p.changeFontStyle(Bold)
 		p.writeLine(lineItem.Name)
-		p.SetFont("regular", "", fontSize)
+		p.changeFontStyle(Regular)
 		p.writeLine("SKU: " + lineItem.SKU + "\n\n")
 	}
 
 	p.writeLine(cfg.Config.Text.Salutation)
-	p.SetFont("bold", "", fontSize)
+	p.changeFontStyle(Bold)
 	p.writeLine(cfg.Config.Text.Signature)
 
-	p.WritePdf(cli.OutFilename)
+	err = p.WritePdf(cli.OutFilename)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
