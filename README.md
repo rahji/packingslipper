@@ -31,11 +31,7 @@ SOPS is a pretty simple tool for encrypting the values in configuration files. T
 while the values will be encrypted, the keys are not. One of the cool things about 
 SOPS is that you can use any number of encryption methods on the same file and only one of them has to succeeed when you're decrypting.
 Another interesting feature is that the file is self-specifying: everything that's needed to know how the file was encrypted is in
-the file itself. I usually use `age` encryption, which is a modern PGP alternative.
-
-To decrypt the config files in Go, I tried the `go.mozilla.org/sops/v3/decrypt` package, which you should definitely not use. 
-I used `github.com/getsops/sops/v3/decrypt` but that seems to not exist anymore. I think the location of that package is now
-https://pkg.go.dev/github.com/getsops/sops/v3/decrypt.
+the file itself. I usually use `age` encryption, which is a modern PGP alternative. To decrypt the config files in Go, I tried the `go.mozilla.org/sops/v3/decrypt` package, which you should definitely not use. Instead, I use the `github.com/getsops/sops/v3/decrypt` package.
 
 Anyway, the secrets for this program are the token from above and your Shopify shop name (as shown at the beginning of your Shopify admin site URL).
 These secrets are stored in an encrypted YAML file. Create the YAML file and encrypt it using SOPS. You'll probably
