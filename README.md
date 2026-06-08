@@ -26,10 +26,18 @@ store and give it permission to view orders. Note the API token that you are giv
 ### Secrets
 
 The secrets configuration for this project is a bit overkill, but the whole thing is really a learning exercise anyway.
-SOPS is a pretty simple tool for encrypting files. Age is a modern PGP alternative for doing the actual encryption. And
-the ~~go.mozilla.org/sops/v3/decrypt~~ **github.com/getsops/sops/v3** package (never use that mozilla one!) provides an easy way to use those encrypted files inside a Go program.
 
-The secrets for this program are the token from above and your Shopify shop name (as shown at the beginning of your Shopify admin site URL).
+SOPS is a pretty simple tool for encrypting the values in configuration files. The file is still readable after being encrypted and 
+while the values will be encrypted, the keys are not. One of the cool things about 
+SOPS is that you can use any number of encryption methods on the same file and only one of them has to succeeed when you're decrypting.
+Another interesting feature is that the file is self-specifying: everything that's needed to know how the file was encrypted is in
+the file itself. I usually use `age` encryption, which is a modern PGP alternative.
+
+To decrypt the config files in Go, I tried the `go.mozilla.org/sops/v3/decrypt` package, which you should definitely not use. 
+I used `github.com/getsops/sops/v3/decrypt` but that seems to not exist anymore. I think the location of that package is now
+https://pkg.go.dev/github.com/getsops/sops/v3/decrypt.
+
+Anyway, the secrets for this program are the token from above and your Shopify shop name (as shown at the beginning of your Shopify admin site URL).
 These secrets are stored in an encrypted YAML file. Create the YAML file and encrypt it using SOPS. You'll probably
 need to [install SOPS](https://getsops.io/) first. And if you want to use Age for the encryption, as I did, you'll need to
 [install Age](https://github.com/FiloSottile/age) and generate a key pair:
